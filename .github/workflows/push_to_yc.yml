@@ -32,9 +32,12 @@ jobs:
          run: yc version
 
       # 4. Логинимся в Container Registry
-      - name: Configure Docker for YC
-        run: |
-          yc container registry configure-docker
+- name: Configure Docker for YC
+  run: |
+    echo "${{ secrets.YC_SERVICE_ACCOUNT_KEY }}" > key.json
+    yc iam key create-token --service-account-key key.json > token.txt
+    cat token.txt | docker login --username json_key --password-stdin cr.yandex
+
 
       # 5. Pull образ из GitHub Container Registry
       - name: Pull image from GHCR
