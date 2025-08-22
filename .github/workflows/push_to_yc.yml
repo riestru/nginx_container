@@ -20,12 +20,10 @@ jobs:
       - name: Set YC CLI PATH
         run: echo "$HOME/bin" >> $GITHUB_PATH
 
-      - name: Check yc version
-        run: yc version
-
       # 3. Логинимся в Yandex Cloud
       - name: Authenticate Yandex Cloud
         run: |
+          yc version
           echo "${{ secrets.YC_SERVICE_ACCOUNT_KEY }}" > key.json
           yc config set service-account-key key.json
           yc config set cloud-id ${{ secrets.YC_CLOUD_ID }}
