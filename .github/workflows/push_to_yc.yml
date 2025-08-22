@@ -16,8 +16,12 @@ jobs:
       - name: Install Yandex Cloud CLI
         run: |
           curl https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
-          export PATH=$HOME/bin:$PATH
-          yc version
+
+      - name: Set YC CLI PATH
+        run: echo "$HOME/bin" >> $GITHUB_PATH
+
+      - name: Check yc version
+        run: yc version
 
       # 3. Логинимся в Yandex Cloud
       - name: Authenticate Yandex Cloud
