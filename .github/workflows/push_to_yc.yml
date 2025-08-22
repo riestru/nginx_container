@@ -12,18 +12,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2. Проверка docker версии
-      - name: Check Docker version
-        run: docker --version
-
-      # 3. Устанавливаем yc CLI
+      # 2. Устанавливаем yc CLI
       - name: Install Yandex Cloud CLI
         run: |
           curl https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
       - name: Set YC CLI PATH
         run: echo "$HOME/bin" >> $GITHUB_PATH
 
-      # 4. Логинимся в Yandex Cloud
+      # 3. Логинимся в Yandex Cloud
       - name: Authenticate Yandex Cloud
         run: |
           echo "${{ secrets.YC_SERVICE_ACCOUNT_KEY }}" > key.json
@@ -34,39 +30,24 @@ jobs:
       - name: Check YC CLI version
         run: yc version
 
-      # 5. Логинимся в Container Registry
+      # 4. Логинимся в Container Registry
       - name: Configure Docker for YC
         run: |
           echo "${{ secrets.YC_SERVICE_ACCOUNT_KEY }}" > key.json
           yc iam key create-token --service-account-key key.json > token.txt
           cat token.txt | docker login --username json_key --password-stdin cr.yandex
 
-      # 6. Pull образ из GitHub Container Registry
+      # 5. Pull образ из GitHub Container Registry
       - name: Pull image from GHCR
         run: |
           docker pull ghcr.io/riestru/nginx_container:latest
 
-      # 7. Tag образ для Yandex Cloud
+      # 6. Tag образ для Yandex Cloud
       - name: Tag image for YC
         run: |
           docker tag ghcr.io/riestru/nginx_container:latest cr.yandex/crp2puuqgr4c8vfi10en/nginx-container:latest
 
-      # 8. Проверяем локальные образы
-      - name: List Docker images
-        run: docker images
-
-      # 9. Inspect конкретного образа
-      - name: Inspect YC tagged image
-        run: docker inspect cr.yandex/crp2puuqgr4c8vfi10en/nginx-container:latest
-
-      # 10. Push образ в Yandex Container Registry
+      # 7. Push образ в Yandex Container Registry
       - name: Push image to YC
-        run: docker push cr.yandex/crp2puuqgr4c8vfi10en/nginx-container:latest
-
-      # 11. Проверяем локальные образы после push
-      - name: List images after push
-        run: docker images
-
-      # 12. Проверяем в реестре Yandex Cloud
-      - name: List images in Yandex Container Registry
-        run: yc container image list --registry-id crp2puuqgr4c8vfi10en
+        run: |
+          docker push cr.yandex/crp2puuqgr4c8vfi10en/nginx-container:latest
