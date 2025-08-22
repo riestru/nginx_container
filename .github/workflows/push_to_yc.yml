@@ -1,0 +1,48 @@
+name: Push nginx image to Yandex Cloud
+
+on:
+  workflow_dispatch:  # чтобы запускать вручную
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Проверяем репозиторий
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2. Устанавливаем yc CLI
+      - name: Install Yandex Cloud CLI
+        run: |
+          curl https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+          export PATH=$HOME/bin:$PATH
+          yc version
+
+      # 3. Логинимся в Yandex Cloud
+      - name: Authenticate Yandex Cloud
+        run: |
+          echo "${{ secrets.YC_SERVICE_ACCOUNT_KEY }}" > key.json
+          yc config set service-account-key key.json
+          yc config set cloud-id ${{ secrets.YC_CLOUD_ID }}
+          yc config set folder-id ${{ secrets.YC_FOLDER_ID }}
+
+      # 4. Логинимся в Container Registry
+      - name: Configure Docker for YC
+        run: |
+          yc container registry configure-docker
+
+      # 5. Pull образ из GitHub Container Registry
+      - name: Pull image from GHCR
+        run: |
+          docker pull ghcr.io/riestru/nginx_container:latest
+
+      # 6. Tag образ для Yandex Cloud
+      - name: Tag image for YC
+        run: |
+          docker tag ghcr.io/riestru/nginx_container:latest cr.yandex/crp2puuqgr4c8vfi10en/nginx-container:latest
+
+      # 7. Push образ в Yandex Container Registry
+      - name: Push image to YC
+        run: |
+          docker push cr.yandex/crp2puuqgr4c8vfi10en/nginx-container:latest
