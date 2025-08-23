@@ -1,15 +1,24 @@
-FROM nginx:1.24
+FROM nginx:1.24-alpine3.18
 
-COPY nginx.conf /etc/nginx/
-RUN sed -i 's/\${PORT}/8080/g' /etc/nginx/nginx.conf
-RUN mkdir -p /var/log/nginx
+# Простая конфигурация для тестирования
+RUN cat > /etc/nginx/nginx.conf << 'EOF'
+events {
+    worker_connections 1024;
+}
+http {
+    server {
+        listen 8080;
+        location /health {
+            return 200 "OK\n";
+            add_header Content-Type text/plain;
+        }
+        location / {
+            return 200 "Hello from Serverless Container\n";
+            add_header Content-Type text/plain;
+        }
+    }
+}
+EOF
 
-RUN echo '#!/bin/bash' > /entrypoint.sh && \
-    echo 'if [ ! -z "$PORT" ]; then' >> /entrypoint.sh && \
-    echo '  sed -i "s/listen 8080;/listen $PORT;/g" /etc/nginx/nginx.conf' >> /entrypoint.sh && \
-    echo 'fi' >> /entrypoint.sh && \
-    echo 'nginx -t' >> /entrypoint.sh && \
-    echo 'exec nginx -g "daemon off;"' >> /entrypoint.sh && \
-    chmod +x /entrypoint.sh
-
-CMD ["/entrypoint.sh"]
+# Убираем daemon режим
+CMD ["nginx", "-g", "daemon off;"]
