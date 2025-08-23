@@ -1,7 +1,7 @@
 FROM nginx:1.24
 
 # Копируем простую конфигурацию
-COPY nginx-proxy.conf /etc/nginx/nginx.conf
+COPY nginx-proxy-debug.conf /etc/nginx/nginx.conf
 
 # Создаем директорию для логов
 RUN mkdir -p /var/log/nginx
@@ -25,4 +25,5 @@ RUN echo '#!/bin/bash' > /entrypoint.sh && \
     chmod +x /entrypoint.sh
 
 CMD ["/entrypoint.sh"]
+
 
