@@ -1,73 +1,71 @@
 name: Push nginx image to Yandex Cloud
-
 on:
   workflow_dispatch:  # запуск вручную
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-
     steps:
       # 1. Проверяем репозиторий
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4  # обновлена версия
 
-      # 2. Проверка docker версии
+      # 2. Проверка Docker версии
       - name: Check Docker version
         run: docker --version
 
-      # 3. Устанавливаем yc CLI и сразу добавляем PATH
+      # 3. Устанавливаем Yandex Cloud CLI
       - name: Install Yandex Cloud CLI
         run: |
           curl https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
-          echo "$HOME/bin" >> $GITHUB_PATH
-          export PATH="$HOME/bin:$PATH"
+          echo "$HOME/yandex-cloud/bin" >> $GITHUB_PATH  # исправлен путь
+          export PATH="$HOME/yandex-cloud/bin:$PATH"
           yc version
 
       # 4. Логинимся в Yandex Cloud
       - name: Authenticate Yandex Cloud
         run: |
-          export PATH="$HOME/bin:$PATH"
-          echo "${{ secrets.YC_SERVICE_ACCOUNT_KEY }}" > key.json
+          export PATH="$HOME/yandex-cloud/bin:$PATH"
+          echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' > key.json
           yc config set service-account-key key.json
           yc config set cloud-id ${{ secrets.YC_CLOUD_ID }}
           yc config set folder-id ${{ secrets.YC_FOLDER_ID }}
           yc config list
 
-      # 5. Логинимся в Container Registry
-      - name: Configure Docker for YC
+      # 5. Логинимся в Yandex Container Registry
+      - name: Login to Yandex Container Registry
         run: |
-          export PATH="$HOME/bin:$PATH"
-          echo "${{ secrets.YC_SERVICE_ACCOUNT_KEY }}" > key.json
-          yc iam key create-token --service-account-key key.json > token.txt
-          cat token.txt | docker login --username json_key --password-stdin cr.yandex
+          export PATH="$HOME/yandex-cloud/bin:$PATH"
+          yc container registry configure-docker
 
-      # 6. Pull образ из GitHub Container Registry
+      # 6. Pull образ из GitHub Container Registry  
       - name: Pull image from GHCR
         run: docker pull ghcr.io/riestru/nginx_container:latest
 
       # 7. Tag образ для Yandex Cloud
       - name: Tag image for YC
-        run: docker tag ghcr.io/riestru/nginx_container:latest cr.yandex/crp2puuqgr4c8vfi10en/nginx-container:latest
+        run: docker tag ghcr.io/riestru/nginx_container:latest cr.yandex/${{ secrets.YC_REGISTRY_ID }}/nginx-container:latest
 
       # 8. Проверяем локальные образы
-      - name: List Docker images
+      - name: List local Docker images
         run: docker images
 
       # 9. Inspect конкретного образа
       - name: Inspect YC tagged image
-        run: docker inspect cr.yandex/crp2puuqgr4c8vfi10en/nginx-container:latest
+        run: docker inspect cr.yandex/${{ secrets.YC_REGISTRY_ID }}/nginx-container:latest
 
       # 10. Push образ в Yandex Container Registry
       - name: Push image to YC
-        run: docker push cr.yandex/crp2puuqgr4c8vfi10en/nginx-container:latest
+        run: docker push cr.yandex/${{ secrets.YC_REGISTRY_ID }}/nginx-container:latest
 
-      # 11. Проверяем локальные образы после push
-      - name: List images after push
-        run: docker images
-
-      # 12. Проверяем наличие образа в реестре
+      # 11. Проверяем наличие образа в реестре
       - name: List images in Yandex Container Registry
         run: |
-          export PATH="$HOME/bin:$PATH"
-          yc container image list --registry-id crp2puuqgr4c8vfi10en
+          export PATH="$HOME/yandex-cloud/bin:$PATH"
+          yc container image list --registry-id ${{ secrets.YC_REGISTRY_ID }}
+
+      # 12. Очистка временных файлов
+      - name: Cleanup
+        if: always()
+        run: |
+          rm -f key.json token.txt
