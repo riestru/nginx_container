@@ -30,20 +30,20 @@ jobs:
           yc config set service-account-key key.json
           yc config set cloud-id ${{ secrets.YC_CLOUD_ID }}
           yc config set folder-id ${{ secrets.YC_FOLDER_ID }}
-          # Проверяем аутентификацию
           echo "=== Проверка конфигурации ==="
           yc config list
-          echo "=== Проверка аутентификации ==="
-          yc iam service-account get $(yc iam key get --key-id $(yc iam key list --format json | jq -r '.[0].id') --format json | jq -r '.service_account_id')
+          echo "=== Проверка доступа к Container Registry ==="
+          yc container registry list || echo "Нет доступа к registry или registry не существует"
 
-      # 5. Логинимся в Yandex Container Registry
+      # 5. Логинимся в Yandex Container Registry (альтернативный способ)
       - name: Login to Yandex Container Registry
         run: |
           export PATH="$HOME/yandex-cloud/bin:$PATH"
-          # Проверяем права доступа
-          yc container registry list
-          # Создаем IAM токен и логинимся
-          yc iam create-token | docker login --username iam --password-stdin cr.yandex
+          echo "=== Логин через service account key ==="
+          # Используем service account key напрямую для Docker login
+          echo '${{ secrets.YC_SERVICE_ACCOUNT_KEY }}' | docker login cr.yandex --username json_key --password-stdin
+          echo "=== Проверка успешности логина ==="
+          docker system info | grep -A 5 "Registry:" || true
 
       # 6. Pull образ из GitHub Container Registry  
       - name: Pull image from GHCR
