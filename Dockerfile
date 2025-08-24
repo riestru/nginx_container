@@ -2,7 +2,7 @@
 FROM nginx:1.24
 
 # Копируем файл конфигурации Nginx
-COPY nginx-test.conf /etc/nginx/nginx.conf
+COPY nginx-test-min.conf /etc/nginx/nginx.conf
 
 # Создаем директорию для логов, если она не существует
 RUN mkdir -p /var/log/nginx
@@ -40,3 +40,4 @@ RUN echo '#!/bin/bash' > /entrypoint.sh && \
 
 # Запускаем скрипт при старте контейнера
 CMD ["/entrypoint.sh"]
+
