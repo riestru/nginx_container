@@ -7,6 +7,9 @@ COPY nginx-test-min.conf /etc/nginx/nginx.conf
 # Создаем директорию для логов, если она не существует
 RUN mkdir -p /var/log/nginx
 
+# Обновляем пакеты и устанавливаем iputils-ping (для ping) и curl
+RUN apt-get update && apt-get install -y iputils-ping curl
+
 # Создаем скрипт запуска в одном многострочном блоке RUN
 RUN echo '#!/bin/bash' > /entrypoint.sh && \
     echo 'echo "=== Запуск контейнера Nginx ==="' >> /entrypoint.sh && \
@@ -40,4 +43,5 @@ RUN echo '#!/bin/bash' > /entrypoint.sh && \
 
 # Запускаем скрипт при старте контейнера
 CMD ["/entrypoint.sh"]
+
 
