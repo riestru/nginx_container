@@ -7,8 +7,9 @@ COPY nginx-test.conf /etc/nginx/nginx.conf
 # Создаем директорию для логов, если она не существует
 RUN mkdir -p /var/log/nginx
 
-# Создаем исполняемый скрипт entrypoint.sh с помощью heredoc
-RUN cat << 'EOF' > /entrypoint.sh
+# Создаем исполняемый скрипт entrypoint.sh с помощью heredoc в одном блоке RUN
+RUN cat << 'EOF' > /entrypoint.sh \
+&& chmod +x /entrypoint.sh
 #!/bin/bash
 echo "=== Запуск контейнера Nginx ==="
 echo "Переменная PORT: ${PORT:-8080}"
@@ -43,9 +44,6 @@ echo ""
 echo "Запуск Nginx..."
 exec nginx -g "daemon off;"
 EOF
-
-# Делаем скрипт исполняемым
-RUN chmod +x /entrypoint.sh
 
 # Запускаем скрипт при старте контейнера
 CMD ["/entrypoint.sh"]
